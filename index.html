@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <!-- On rend notre chat plus présentable -->
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html,body {
+            height:100%;
+            margin:0;
+            padding: 0;
+        }
+        #chat {
+            display:flex;
+            flex-direction: column;
+            height:100%;
+        }
+        #messages {
+            flex-grow: 1;
+        }
+        #msgInput {
+            width: 100%;
+            border:1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chat">
+        <div id="messages">
+            <form id="sendForm">
+                <input id="msgInput" type="text">
+            </form>
+        </div>
+    </div>
+    <!-- route définie par socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        //On instancie un socket
+        let socket = io();
+        //On fait en sorte que notre utilisateur puisse envoyer des messages
+        sendForm.addEventListener("submit", function (evt) {
+            //On empeche le fonctionnement par défaut du formulaire pour ne pas envoyer les données et rafraichir la page
+            evt.preventDefault();
+            //On envoie le message
+            socket.emit("msg", msgInput.value);
+            //On vide le champ texte pour que l'util puisse envoyer un nouveau message
+            msgInput.value = "";
+        });
+        // quand je reçois sur le socket un message on appelle une fonction qui reçois le message et qui ajoute dans messages une div avec le message
+        socket.on("msg", function(message) {
+            let div = document.createElement("div");
+            div.textContent = message;
+            messages.appendChild(div);
+        });
+    </script>
+</body>
+
+</html>
