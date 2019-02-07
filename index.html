@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Tchat Pointer Game Chaise</title>
     <!-- On rend notre chat plus présentable -->
     <style>
         * {
@@ -16,49 +16,128 @@
             margin:0;
             padding: 0;
         }
+
+        main {
+            display: flex;
+            height: 100%;
+        }
         #chat {
             display:flex;
             flex-direction: column;
+            flex-grow: 1;
             height:100%;
         }
         #messages {
             flex-grow: 1;
         }
         #msgInput {
-            width: 100%;
+            width: 95%;
             border:1px solid black;
+            border-radius: 5px;
+            font-size: 1.5rem;
+            margin: 1rem;
+        }
+        #users {
+            width: 200px;
+            height: 100%;
+
+            background-color: pink;
+        }
+
+        .ball {
+            margin: 0;
+            padding: 0;
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: salmon;
         }
     </style>
 </head>
 
 <body>
-    <div id="chat">
-        <div id="messages">
+    <main>
+        <div id="chat">
+            <div id="messages">
+            </div>
             <form id="sendForm">
                 <input id="msgInput" type="text">
             </form>
         </div>
-    </div>
+        <div id="users">
+
+        </div>
+    </main>
+
+    <script src="/lodash"></script>
     <!-- route définie par socket.io -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        //On instancie un socket
-        let socket = io();
-        //On fait en sorte que notre utilisateur puisse envoyer des messages
-        sendForm.addEventListener("submit", function (evt) {
-            //On empeche le fonctionnement par défaut du formulaire pour ne pas envoyer les données et rafraichir la page
-            evt.preventDefault();
-            //On envoie le message
-            socket.emit("msg", msgInput.value);
-            //On vide le champ texte pour que l'util puisse envoyer un nouveau message
-            msgInput.value = "";
-        });
-        // quand je reçois sur le socket un message on appelle une fonction qui reçois le message et qui ajoute dans messages une div avec le message
-        socket.on("msg", function(message) {
-            let div = document.createElement("div");
-            div.textContent = message;
-            messages.appendChild(div);
-        });
+        "use strict";
+
+        (function () {
+            //On instancie un socket
+            let socket = io();
+            let pseudo = "";
+
+            pseudo = promptUser();
+            window.addEventListener('mousemove', _.throttle(onMouseMove, 50));
+            socket.emit("getPseudo", pseudo);
+            console.log("pseudo: " + pseudo);
+
+            //On fait en sorte que notre utilisateur puisse envoyer des messages
+            sendForm.addEventListener("submit", function (evt) {
+                //On empeche le fonctionnement par défaut du formulaire pour ne pas envoyer les données et rafraichir la page
+                evt.preventDefault();
+                //On envoie le message
+                socket.emit("msg", msgInput.value);
+                //On vide le champ texte pour que l'util puisse envoyer un nouveau message
+                msgInput.value = "";
+            });
+            // quand je reçois sur le socket un message on appelle une fonction qui reçois le message et qui ajoute dans messages une div avec le message
+            socket.on("msg", function (obj) {
+                let div = document.createElement("div");
+                div.textContent = obj.psd + ": " + obj.mess;
+                messages.appendChild(div);
+            });
+
+            socket.on('mousemove', function (data) {
+                let mousePointer = document.querySelector(`.ball[data-id="${data.id}"]`);
+                mousePointer = (mousePointer == null) ? createMouse(data.id) : mousePointer;
+                mousePointer.style.left = data.x + "px";
+                mousePointer.style.top = data.y + "px";
+            });
+
+            socket.on('userdisconnected', function (data) {
+                let mousePointer = document.querySelector(`.ball[data-id="${data.id}"]`);
+                mousePointer.remove();
+            });
+
+            function promptUser() {
+                let pseudo = "";
+                while (!pseudo) {
+                    pseudo = prompt("Indiquez un pseudo");
+                }
+                return pseudo;
+            }
+
+            function onMouseMove(evt) {
+                socket.emit('mousemove', { x: evt.clientX, y: evt.clientY });
+            }
+
+            function createMouse(id) {
+                console.log("mousecreation");
+                let div = document.createElement('div');
+                div.classList.add('ball');
+                div.setAttribute('data-id', id);
+                document.body.appendChild(div);
+                return div;
+            }
+        })();
+
     </script>
 </body>
 
